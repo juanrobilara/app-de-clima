@@ -56,10 +56,34 @@ fun translateCondition(condition: String): String =
         "Clear" -> "Despejado"
         "Clouds" -> "Nublado"
         "Rain" -> "Lluvia"
-        "Snow" -> "Nieve"
+        "Drizzle" -> "Llovizna"
         "Thunderstorm" -> "Tormenta"
+        "Snow" -> "Nieve"
+        "Mist" -> "Niebla"
+        "Smoke" -> "Humo"
+        "Haze" -> "Neblina"
+        "Dust" -> "Polvo"
+        "Fog" -> "Niebla densa"
+        "Sand" -> "Tormenta de arena"
+        "Ash" -> "Ceniza volcánica"
+        "Squall" -> "Ráfagas"
+        "Tornado" -> "Tornado"
         else -> condition
     }
+
+fun windDirectionFromDegrees(deg: Int): String {
+    val directions = listOf(
+        "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+        "S", "SS0", "SO", "OSO", "W", "ONO", "NO", "NNO"
+    )
+    val index = ((deg / 22.5) + 0.5).toInt() % 16
+    return directions[index]
+}
+
+
+fun windSpeedToKilometers(speed: Double): Double =
+    speed * 1.609
+
 
 data class Wind(
     val speed: Double,

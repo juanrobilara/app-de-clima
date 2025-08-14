@@ -1,6 +1,7 @@
 package com.example.climapp.data.network
 
 import com.example.climapp.domain.model.WeatherResponse
+import com.example.climapp.domain.repository.NearbyWeatherResponse
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -18,6 +19,16 @@ interface WeatherApiService {
         @Query("lon") lon: String,
         @Query("appid") appid: String,
     ): WeatherResponse
+
+    @GET("data/2.5/find")
+    suspend fun getNearbyWeather(
+        @Query("lat") lat: Double,
+        @Query("lon") lon: Double,
+        @Query("cnt") cnt: Int = 20,
+        @Query("appid") appid: String,
+        @Query("units") units: String = "metric"
+    ): NearbyWeatherResponse
+
 
     companion object {
         fun create(): WeatherApiService {

@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <application
         android:name=".Climapp"
         android:allowBackup="true"
@@ -13,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Climapp"
         tools:targetApi="31">
+        <meta-data
+            android:name="maplibre.configuration.account_token"
+            android:value="NOT_NEEDED_FOR_MAPLIBRE" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

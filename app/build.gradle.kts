@@ -28,11 +28,25 @@ android {
 
         //devolver una clave vacía en caso de que algo salga mal
         val apiKey = properties.getProperty( "API_KEY" ) ?: ""
+        val rapidKey = properties.getProperty("RAPID_API_KEY") ?: ""
+        val mapKey = properties.getProperty("MAP_KEY") ?: ""
 
         buildConfigField(
             type = "String" ,
             name = "API_KEY" ,
             value = apiKey
+        )
+
+        buildConfigField(
+            type = "String",
+            name = "RAPID_API_KEY",
+            value = rapidKey
+        )
+
+        buildConfigField(
+            type = "String",
+            name = "MAP_KEY",
+            value = mapKey
         )
 
     }
@@ -103,6 +117,13 @@ android {
 
         implementation(libs.weather.icons)
         implementation(libs.iconics.core)
+        implementation ("androidx.compose.material:material-icons-extended")
+
+        implementation ("org.maplibre.gl:android-sdk:11.8.0")
+        implementation ("org.maplibre.gl:android-plugin-annotation-v9:3.0.2")
+        implementation ("com.google.accompanist:accompanist-permissions:0.30.1")
+        implementation ("com.google.android.gms:play-services-location:21.0.1")
+
 
         testImplementation(libs.junit)
         androidTestImplementation(libs.androidx.junit)

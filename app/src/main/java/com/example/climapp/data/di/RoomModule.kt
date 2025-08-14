@@ -2,6 +2,8 @@ package com.example.climapp.data.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.climapp.data.local.AppDatabase
+import com.example.climapp.data.local.CityDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -9,24 +11,23 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-/*
+
 
 @Module
 @InstallIn(SingletonComponent::class)
-object RoomModule {
-    private const val PET_DATABASE_NAME = "pet_database"
+object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideRoom(
-        @ApplicationContext context: Context,
-    ) = Room.databaseBuilder(context, PetDatabase::class.java, PET_DATABASE_NAME).build()
-
-    @Provides
-    @Singleton
-    fun providePetRepository(db: PetDatabase): PetsRepository {
-        return PetsRepositoryImpl(db.getPetDao())
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "weather_app_db"
+        ).build()
     }
+
+    @Provides
+    fun provideCityDao(db: AppDatabase): CityDao = db.cityDao()
 }
 
-*/
