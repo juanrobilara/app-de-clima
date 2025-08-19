@@ -74,7 +74,7 @@ fun WeatherMapScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val weatherPoints by viewModel.weatherPoints.collectAsState()
     val key = BuildConfig.MAP_KEY
-    val locationPermissionState = rememberPermissionState(android.Manifest.permission.ACCESS_FINE_LOCATION)
+    val locationPermissionState = rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION)
 
     val addedIcons = remember { mutableSetOf<String>() }
     val mapView = remember { MapView(context).apply { onCreate(null) } }

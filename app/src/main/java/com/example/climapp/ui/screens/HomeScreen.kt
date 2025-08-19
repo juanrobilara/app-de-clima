@@ -1,5 +1,8 @@
 package com.example.climapp.ui.screens
 
+import android.content.Context
+import android.location.Location
+import android.location.LocationManager
 import android.widget.ImageView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,11 +65,15 @@ import com.example.climapp.domain.model.windDirectionFromDegrees
 import com.example.climapp.domain.model.windSpeedToKilometers
 import com.example.climapp.ui.components.MainScaffold
 import com.example.climapp.ui.viewmodel.WeatherViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.library.weathericons.WeatherIcons
 import com.mikepenz.iconics.utils.sizeDp
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen(
     navController: NavHostController,
@@ -74,10 +82,33 @@ fun HomeScreen(
     val weatherState by viewModel.currentWeather.collectAsStateWithLifecycle()
     val suggestions by viewModel.citySuggestions.collectAsState()
     val history by viewModel.getHistory().collectAsState(initial = emptyList())
-
+    val locationPermissionState = rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+    val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var showSuggestions by remember { mutableStateOf(false) }
     var selectedCity by remember { mutableStateOf<CityEntity?>(null) }
+
+    val locationManager = remember {
+        context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    }
+
+    var userLocation by remember { mutableStateOf<Location?>(null) }
+
+    // Pedir los permisos
+    LaunchedEffect(Unit) {
+        if (!locationPermissionState.status.isGranted) {
+            locationPermissionState.launchPermissionRequest()
+        }
+    }
+
+    // Obtener ubicación
+    LaunchedEffect(locationPermissionState.status.isGranted) {
+        if (locationPermissionState.status.isGranted) {
+            val gps = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            val net = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            userLocation = listOfNotNull(gps, net).maxByOrNull { it.time }
+        }
+    }
 
 
     MainScaffold("Home",

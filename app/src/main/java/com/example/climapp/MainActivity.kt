@@ -21,6 +21,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.climapp.ui.core.NavigationWrapper
 import com.example.climapp.ui.screens.HomeScreen
 import com.example.climapp.ui.theme.ClimappTheme
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.HiltAndroidApp
 import org.maplibre.android.MapLibre
@@ -34,6 +36,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val key = BuildConfig.MAP_KEY
+
 
         val tileServer = WellKnownTileServer.MapTiler
         MapLibre.getInstance(applicationContext, key, WellKnownTileServer.MapTiler)
