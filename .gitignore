@@ -1,16 +1,20 @@
+# build
+/build/
+/.gradle/
 *.iml
-.gradle
+.externalNativeBuild/
+.cxx/
+
+# locales
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+/captures/
+
+# prop
 /juan.properties
+
+# config
+/.idea/
+#mantener
+!/.idea/inspectionProfiles/
+!/.idea/vcs.xml

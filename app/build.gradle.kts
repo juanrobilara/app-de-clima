@@ -123,7 +123,7 @@ android {
         implementation ("org.maplibre.gl:android-plugin-annotation-v9:3.0.2")
         implementation ("com.google.accompanist:accompanist-permissions:0.30.1")
         implementation ("com.google.android.gms:play-services-location:21.0.1")
-
+        implementation ("androidx.datastore:datastore-preferences:1.1.7")
 
         testImplementation(libs.junit)
         androidTestImplementation(libs.androidx.junit)

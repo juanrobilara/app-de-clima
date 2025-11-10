@@ -9,8 +9,13 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.climapp.data.repository.ThemeSetting
+import com.example.climapp.ui.viewmodel.SettingsViewModel
 
 private val DarkColorScheme = darkColorScheme(
     primary = Color.White,
@@ -39,17 +44,23 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun ClimappTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
     content: @Composable () -> Unit
 ) {
+    val themeSetting by settingsViewModel.themeSetting.collectAsState()
+    val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    val darkTheme = when (themeSetting) {
+        ThemeSetting.SYSTEM -> isSystemInDarkTheme()
+        ThemeSetting.LIGHT -> false
+        ThemeSetting.DARK -> true
+    }
+
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        dynamicColor -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

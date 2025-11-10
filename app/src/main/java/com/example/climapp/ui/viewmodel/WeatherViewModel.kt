@@ -8,25 +8,23 @@ import com.example.climapp.data.local.CityDao
 import com.example.climapp.data.local.CityEntity
 import com.example.climapp.data.network.CityApiService
 import com.example.climapp.domain.model.City
-import com.example.climapp.domain.model.WeatherResponse
-import com.example.climapp.domain.model.toCelsius
 import com.example.climapp.domain.repository.WeatherRepository
+import com.example.climapp.ui.core.WeatherUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.roundToInt
-import kotlin.math.sin
 
 @HiltViewModel
 class WeatherViewModel @Inject constructor(
@@ -35,36 +33,45 @@ class WeatherViewModel @Inject constructor(
     private val cityDao: CityDao
 ) : ViewModel() {
 
-
-
-
-
-    // === CLIMA ===
-    private val _currentWeather = MutableStateFlow<WeatherResponse?>(null)
-    val currentWeather: StateFlow<WeatherResponse?> = _currentWeather.asStateFlow()
     private val key = BuildConfig.API_KEY
     private val searchQuery = MutableStateFlow("")
+    private val _citySuggestions = MutableStateFlow<List<City>>(emptyList())
+    val citySuggestions: StateFlow<List<City>> = _citySuggestions.asStateFlow()
+    val savedCities: StateFlow<List<CityEntity>> = cityDao.getAllCities()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _cityWeatherMap = MutableStateFlow<Map<Int, WeatherUiState>>(emptyMap())
+    val cityWeatherMap: StateFlow<Map<Int, WeatherUiState>> = _cityWeatherMap.asStateFlow()
 
-//Inicio para evitar problemas
     init {
-        fetchCurrentWeather()
+        savedCities.onEach { cities ->
+            fetchWeatherForSavedCities(cities)
+        }.launchIn(viewModelScope)
         observeSearchQuery()
     }
 
-    fun fetchCurrentWeather(lat: String = "-34.669635", lon: String = "-58.564624") {
+    private fun fetchWeatherForSavedCities(cities: List<CityEntity>) {
         viewModelScope.launch {
-            try {
-                val response = repository.getCurrentWeather(lat, lon, key)
-                _currentWeather.value = response
-            } catch (e: Exception) {
-                Log.e("WeatherViewModel", "Error fetching weather", e)
+            val updatedMap = ConcurrentHashMap(_cityWeatherMap.value)
+
+            cities.forEach { city ->
+                if (updatedMap[city.id] !is WeatherUiState.Success) {
+                    try {
+                        updatedMap[city.id] = WeatherUiState.Loading
+                        _cityWeatherMap.value = updatedMap.toMap()
+
+                        val response = repository.getCurrentWeather(city.lat.toString(), city.lon.toString(), key)
+                        updatedMap[city.id] = WeatherUiState.Success(response)
+                    } catch (e: Exception) {
+                        Log.e("WeatherViewModel", "Error obteniendo clima de ${city.name}", e)
+                        updatedMap[city.id] = WeatherUiState.Error("Error")
+                    }
+                }
             }
+            _cityWeatherMap.value = updatedMap.toMap()
         }
     }
 
-// === BÚSQUEDA ===
-    private val _citySuggestions = MutableStateFlow<List<City>>(emptyList())
-    val citySuggestions: StateFlow<List<City>> = _citySuggestions.asStateFlow()
+
     @OptIn(FlowPreview::class)
     fun observeSearchQuery() {
         viewModelScope.launch {
@@ -74,9 +81,7 @@ class WeatherViewModel @Inject constructor(
                 .filter { it.isNotBlank() && it.length > 2 }
                 .distinctUntilChanged()
                 .collect { query ->
-
                     if (query != lastQuery) {
-
                         getSuggestions(query)
                         lastQuery = query
                     }
@@ -89,7 +94,7 @@ class WeatherViewModel @Inject constructor(
             val response = geoDbService.getCities(query)
             _citySuggestions.value = response.data
         } catch (e: Exception) {
-            Log.e("WeatherViewModel", "Error fetching city suggestions", e)
+            Log.e("WeatherViewModel", "Error obteniendo sugerencias", e)
         }
     }
 
@@ -101,13 +106,43 @@ class WeatherViewModel @Inject constructor(
         searchQuery.value = query
     }
 
-    // === HISTORIAL (En proceso) ===
-    fun getHistory(): Flow<List<CityEntity>> = cityDao.getRecentCities()
+    fun addSavedCity(city: City) {
+        viewModelScope.launch {
+            val cityEntity = CityEntity(
+                id = city.id,
+                name = city.name,
+                lat = city.latitude,
+                lon = city.longitude
+            )
+            cityDao.insertCity(cityEntity)
+        }
+    }
 
-    private suspend fun saveToHistory(city: City) {
-        cityDao.insert(
-            CityEntity(name = city.name, lat = city.latitude, lon = city.longitude)
-        )
+    // impl proximamente para borrar
+    fun deleteCity(city: CityEntity) {
+        viewModelScope.launch {
+            cityDao.deleteCity(city)
+            _cityWeatherMap.value = _cityWeatherMap.value.toMutableMap().apply {
+                remove(city.id)
+            }
+        }
+    }
+
+    fun refreshWeatherForCity(city: CityEntity) {
+        viewModelScope.launch {
+            _cityWeatherMap.value = _cityWeatherMap.value.toMutableMap().apply {
+                put(city.id, WeatherUiState.Loading)
+            }
+            try {
+                val response = repository.getCurrentWeather(city.lat.toString(), city.lon.toString(), key)
+                _cityWeatherMap.value = _cityWeatherMap.value.toMutableMap().apply {
+                    put(city.id, WeatherUiState.Success(response))
+                }
+            } catch (e: Exception) {
+                _cityWeatherMap.value = _cityWeatherMap.value.toMutableMap().apply {
+                    put(city.id, WeatherUiState.Error("Error"))
+                }
+            }
+        }
     }
 }
-

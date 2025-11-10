@@ -17,6 +17,8 @@ constructor(
         appid: String,
     ): WeatherResponse = apiService.getCurrentWeather(lat, long, appid)
 
+
+    //implementar a futuro en el mapa para actualización dinámica
     suspend fun getNearbyWeather(
         lat: Double,
         lon: Double,

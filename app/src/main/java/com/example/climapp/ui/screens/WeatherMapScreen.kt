@@ -52,6 +52,7 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import android.graphics.*
 import android.util.Log
+import androidx.compose.foundation.layout.padding
 
 import androidx.compose.runtime.*
 
@@ -74,7 +75,8 @@ fun WeatherMapScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val weatherPoints by viewModel.weatherPoints.collectAsState()
     val key = BuildConfig.MAP_KEY
-    val locationPermissionState = rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+    val locationPermissionState =
+        rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION)
 
     val addedIcons = remember { mutableSetOf<String>() }
     val mapView = remember { MapView(context).apply { onCreate(null) } }
@@ -125,53 +127,81 @@ fun WeatherMapScreen(
         }
     }
 
-    // Iniciar mapa
-    AndroidView(
-        factory = { mapView },
-        modifier = Modifier.fillMaxSize(),
-        update = { mv ->
-            mv.getMapAsync { map ->
-                map.setStyle("https://api.maptiler.com/maps/streets/style.json?key=$key") { style ->
-                    mapLibreMap = map
-                    styleMap = style
-
-                    // Centrar
-                    userLocation?.let {
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 10.0))
-                        viewModel.fetchArgentineCapitalsWeather()
-                    }
-
-
-                    symbolManager = SymbolManager(mapView, map, style).apply {
-                        iconAllowOverlap = true
-                    }
-                }
+    MainScaffold(
+        "Mapa de temperaturas (Argentina)",
+        "mapa",
+        onNavigate = { route ->
+            navController.navigate(route) {
+                popUpTo("home") { inclusive = false }; launchSingleTop = true
             }
-        }
-    )
+        },
+        showFab = false
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Iniciar mapa
+            AndroidView(
+                factory = { mapView },
+                modifier = Modifier.fillMaxSize(),
+                update = { mv ->
+                    mv.getMapAsync { map ->
+                        map.setStyle("https://api.maptiler.com/maps/streets/style.json?key=$key") { style ->
+                            mapLibreMap = map
+                            styleMap = style
 
-    LaunchedEffect(weatherPoints) {
-        val sm = symbolManager
-        val style = styleMap
+                            // Centrar
+                            userLocation?.let {
+                                map.moveCamera(
+                                    CameraUpdateFactory.newLatLngZoom(
+                                        LatLng(
+                                            it.latitude,
+                                            it.longitude
+                                        ), 10.0
+                                    )
+                                )
+                                viewModel.fetchArgentineCapitalsWeather()
+                            }
 
-        if (sm != null && style != null) {
-            sm.deleteAll()
 
-            weatherPoints.forEach { point ->
-                val latLng = LatLng(point.lat, point.lon)
-                val iconId = "temp-${point.lat}-${point.lon}"
-                val bitmap = createTemperatureBubbleBitmap(context, getColorForTemperature(point.temp), point.temp)
-
-                if (!addedIcons.contains(iconId)) {
-                    style.addImage(iconId, bitmap)
-                    addedIcons.add(iconId)
+                            symbolManager = SymbolManager(mapView, map, style).apply {
+                                iconAllowOverlap = true
+                            }
+                        }
+                    }
                 }
+            )
 
-                val options = SymbolOptions()
-                    .withLatLng(latLng)
-                    .withIconImage(iconId)
+            LaunchedEffect(weatherPoints) {
+                val sm = symbolManager
+                val style = styleMap
 
-                sm.create(options)
+                if (sm != null && style != null) {
+                    sm.deleteAll()
+
+                    weatherPoints.forEach { point ->
+                        val latLng = LatLng(point.lat, point.lon)
+                        val iconId = "temp-${point.lat}-${point.lon}"
+                        val bitmap = createTemperatureBubbleBitmap(
+                            context,
+                            getColorForTemperature(point.temp),
+                            point.temp
+                        )
+
+                        if (!addedIcons.contains(iconId)) {
+                            style.addImage(iconId, bitmap)
+                            addedIcons.add(iconId)
+                        }
+
+                        val options = SymbolOptions()
+                            .withLatLng(latLng)
+                            .withIconImage(iconId)
+
+                        sm.create(options)
+                    }
+                }
             }
         }
     }

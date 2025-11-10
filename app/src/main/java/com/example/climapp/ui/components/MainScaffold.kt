@@ -40,11 +40,9 @@ fun MainScaffold(
 ) {
     val items = listOf(
         BottomNavItem("home", Icons.Default.Home, "Inicio"),
-        BottomNavItem("favoritos", Icons.Default.Star, "Favoritos"),
         BottomNavItem("mapa", Icons.Default.Map, "Mapa"),
         BottomNavItem("ajustes", Icons.Default.Settings, "Ajustes")
     )
-
     Scaffold(
 
         topBar = {
@@ -77,7 +75,7 @@ fun MainScaffold(
         },
         floatingActionButton = {
             if (showFab) {
-                FloatingActionButton(onClick = { onNavigate("agregar_ciudad") }) {
+                FloatingActionButton(onClick = { onNavigate("add_city") }) {
                     Icon(Icons.Default.Add, contentDescription = "Agregar Ciudad")
                 }
             }
